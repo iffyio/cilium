@@ -167,19 +167,19 @@ generate-health-api: api/v1/health/openapi.yaml
 generate-k8s-api:
 	cd "./vendor/k8s.io/code-generator" && \
 	./generate-groups.sh all \
-	    github.com/cilium/cilium/pkg/k8s/client \
+	    github.com/cilium/cilium/pkg/k8s/generated \
 	    github.com/cilium/cilium/pkg/k8s/apis \
 	    "cilium.io:v2" \
 	    --go-header-file "$(PWD)/hack/custom-boilerplate.go.txt"
 	cd "./vendor/k8s.io/code-generator" && \
 	./generate-groups.sh deepcopy \
-	    github.com/cilium/cilium/pkg/k8s/client \
+	    github.com/cilium/cilium/pkg/k8s/generated \
 	    github.com/cilium/cilium/pkg \
 	    "policy:api" \
 	    --go-header-file "$(PWD)/hack/custom-boilerplate.go.txt"
 	cd "./vendor/k8s.io/code-generator" && \
 	./generate-groups.sh deepcopy \
-	    github.com/cilium/cilium/pkg/k8s/client \
+	    github.com/cilium/cilium/pkg/k8s/generated \
 	    github.com/cilium/cilium \
 	    "pkg:labels" \
 	    --go-header-file "$(PWD)/hack/custom-boilerplate.go.txt"

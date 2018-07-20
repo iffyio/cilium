@@ -38,7 +38,7 @@ import (
 	"github.com/cilium/cilium/pkg/envoy"
 	"github.com/cilium/cilium/pkg/flowdebug"
 	"github.com/cilium/cilium/pkg/identity"
-	"github.com/cilium/cilium/pkg/k8s"
+	k8sclient "github.com/cilium/cilium/pkg/k8s/client"
 	"github.com/cilium/cilium/pkg/kvstore"
 	"github.com/cilium/cilium/pkg/labels"
 	"github.com/cilium/cilium/pkg/logging"
@@ -728,7 +728,7 @@ func initEnv(cmd *cobra.Command) {
 		}
 	}
 
-	k8s.Configure(k8sAPIServer, k8sKubeConfigPath)
+	k8sclient.Configure(k8sAPIServer, k8sKubeConfigPath)
 
 	// workaround for to use the values of the deprecated dockerEndpoint
 	// variable if it is set with a different value than defaults.

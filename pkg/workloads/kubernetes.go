@@ -18,8 +18,8 @@ import (
 	"regexp"
 
 	"github.com/cilium/cilium/pkg/defaults"
-	"github.com/cilium/cilium/pkg/k8s"
 	k8sConst "github.com/cilium/cilium/pkg/k8s/apis/cilium.io"
+	k8sclient "github.com/cilium/cilium/pkg/k8s/client"
 	"github.com/cilium/cilium/pkg/logging/logfields"
 	"github.com/cilium/cilium/pkg/option"
 	"github.com/cilium/cilium/pkg/policy"
@@ -59,7 +59,7 @@ var (
 
 // fetchK8sLabels returns the kubernetes labels from the given container labels
 func fetchK8sLabels(containerID string, containerLbls map[string]string) (map[string]string, error) {
-	if !k8s.IsEnabled() {
+	if !k8sclient.IsEnabled() {
 		return nil, nil
 	}
 	podName := k8sDockerLbls.GetPodName(containerLbls)
@@ -75,13 +75,13 @@ func fetchK8sLabels(containerID string, containerLbls map[string]string) (map[st
 		logfields.K8sPodName:   podName,
 	}).Debug("Connecting to k8s to retrieve labels for pod in ns")
 
-	result, err := k8s.Client().CoreV1().Pods(ns).Get(podName, metav1.GetOptions{})
+	result, err := k8sclient.Client().CoreV1().Pods(ns).Get(podName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 
 	// Also get all labels from the namespace where the pod is running
-	k8sNs, err := k8s.Client().CoreV1().Namespaces().Get(ns, metav1.GetOptions{})
+	k8sNs, err := k8sclient.Client().CoreV1().Namespaces().Get(ns, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

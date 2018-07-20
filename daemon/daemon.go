@@ -50,6 +50,7 @@ import (
 	"github.com/cilium/cilium/pkg/ipam"
 	"github.com/cilium/cilium/pkg/ipcache"
 	"github.com/cilium/cilium/pkg/k8s"
+	k8sclient "github.com/cilium/cilium/pkg/k8s/client"
 	"github.com/cilium/cilium/pkg/labels"
 	"github.com/cilium/cilium/pkg/lock"
 	"github.com/cilium/cilium/pkg/logging"
@@ -1130,7 +1131,7 @@ func NewDaemon() (*Daemon, error) {
 	log.Info("Launching endpoint builder workers")
 	d.StartEndpointBuilders(numWorkerThreads())
 
-	if k8s.IsEnabled() {
+	if k8sclient.IsEnabled() {
 		if err := k8s.Init(); err != nil {
 			log.WithError(err).Fatal("Unable to initialize Kubernetes subsystem")
 		}
@@ -1155,12 +1156,12 @@ func NewDaemon() (*Daemon, error) {
 	}
 
 	// If the device has been specified, the IPv4AllocPrefix and the
-	// IPv6AllocPrefix were already allocated before the k8s.Init().
+	// IPv6AllocPrefix were already allocated before the k8sclient.Init().
 	//
-	// If the device hasn't been specified, k8s.Init() allocated the
+	// If the device hasn't been specified, k8sclient.Init() allocated the
 	// IPv4AllocPrefix and the IPv6AllocPrefix from k8s node annotations.
 	//
-	// If k8s.Init() failed to retrieve the IPv4AllocPrefix we can try to derive
+	// If k8sclient.Init() failed to retrieve the IPv4AllocPrefix we can try to derive
 	// it from an existing node_config.h file or from previous cilium_host
 	// interfaces.
 	//
@@ -1211,9 +1212,9 @@ func NewDaemon() (*Daemon, error) {
 		node.AddAuxPrefix(ipnet)
 	}
 
-	if k8s.IsEnabled() {
+	if k8sclient.IsEnabled() {
 		log.Info("Annotating k8s node with CIDR ranges")
-		err := k8s.AnnotateNode(k8s.Client(), node.GetName(),
+		err := k8s.AnnotateNode(k8sclient.Client(), node.GetName(),
 			node.GetIPv4AllocRange(), node.GetIPv6NodeRange(),
 			nil, nil, node.GetInternalIPv4())
 		if err != nil {
@@ -1564,8 +1565,8 @@ func (h *getConfig) Handle(params GetConfigParams) middleware.Responder {
 
 	status := &models.DaemonConfigurationStatus{
 		Addressing:       d.getNodeAddressing(),
-		K8sConfiguration: k8s.GetKubeconfigPath(),
-		K8sEndpoint:      k8s.GetAPIServer(),
+		K8sConfiguration: k8sclient.GetKubeconfigPath(),
+		K8sEndpoint:      k8sclient.GetAPIServer(),
 		NodeMonitor:      d.nodeMonitor.State(),
 		KvstoreConfiguration: &models.KVstoreConfiguration{
 			Type:    kvStore,

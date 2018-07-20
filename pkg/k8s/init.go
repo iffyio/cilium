@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/cilium/cilium/pkg/backoff"
+	k8sclient "github.com/cilium/cilium/pkg/k8s/client"
 	"github.com/cilium/cilium/pkg/logging/logfields"
 	"github.com/cilium/cilium/pkg/node"
 	"github.com/cilium/cilium/pkg/option"
@@ -58,7 +59,7 @@ func retrieveNodeInformation(nodeName string) (*node.Node, error) {
 	requireIPv4CIDR := option.Config.K8sRequireIPv4PodCIDR
 	requireIPv6CIDR := option.Config.K8sRequireIPv6PodCIDR
 
-	k8sNode, err := GetNode(Client(), nodeName)
+	k8sNode, err := GetNode(k8sclient.Client(), nodeName)
 	if err != nil {
 		// If no CIDR is required, retrieving the node information is
 		// optional
@@ -92,11 +93,11 @@ func Init() error {
 		return fmt.Errorf("unable to parse compatible k8s verions: %s", err)
 	}
 
-	if err := createDefaultClient(); err != nil {
+	if err := k8sclient.CreateDefaultClient(); err != nil {
 		return fmt.Errorf("unable to create k8s client: %s", err)
 	}
 
-	sv, err := GetServerVersion()
+	sv, err := k8sclient.GetServerVersion()
 	if err != nil {
 		return fmt.Errorf("k8s client failed to talk to k8s api-server: %s", err)
 	}

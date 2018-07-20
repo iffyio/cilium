@@ -34,6 +34,7 @@ import (
 	healthPkg "github.com/cilium/cilium/pkg/health/client"
 	"github.com/cilium/cilium/pkg/health/defaults"
 	"github.com/cilium/cilium/pkg/k8s"
+	k8sclient "github.com/cilium/cilium/pkg/k8s/client"
 	"github.com/cilium/cilium/pkg/labels"
 	"github.com/cilium/cilium/pkg/logging/logfields"
 	"github.com/cilium/cilium/pkg/mtu"
@@ -238,8 +239,8 @@ func LaunchAsEndpoint(owner endpoint.Owner, hostAddressing *models.NodeAddressin
 	}
 
 	// Propagate health IPs to all other nodes
-	if k8s.IsEnabled() {
-		err := k8s.AnnotateNode(k8s.Client(), node.GetName(), nil, nil, ip4, ip6, nil)
+	if k8sclient.IsEnabled() {
+		err := k8s.AnnotateNode(k8sclient.Client(), node.GetName(), nil, nil, ip4, ip6, nil)
 		if err != nil {
 			return fmt.Errorf("Cannot annotate node CIDR range data: %s", err)
 		}

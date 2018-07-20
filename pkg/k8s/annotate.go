@@ -17,6 +17,7 @@ package k8s
 import (
 	"fmt"
 
+	k8sclient "github.com/cilium/cilium/pkg/k8s/client"
 	"github.com/cilium/cilium/pkg/logging/logfields"
 	"github.com/cilium/cilium/pkg/uuid"
 
@@ -47,7 +48,7 @@ func AnnotatePod(e PodEndpoint, annotationKey, annotationValue string) error {
 		logfields.RetryUUID:             uuid.NewUUID(),
 	})
 
-	pod, err := Client().CoreV1().Pods(e.GetK8sNamespace()).Get(e.GetK8sPodName(), meta_v1.GetOptions{})
+	pod, err := k8sclient.Client().CoreV1().Pods(e.GetK8sNamespace()).Get(e.GetK8sPodName(), meta_v1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("unable to annotate pod, cannot retrieve pod: %s", err)
 	}
@@ -57,7 +58,7 @@ func AnnotatePod(e PodEndpoint, annotationKey, annotationValue string) error {
 	}
 
 	pod.Annotations[annotationKey] = annotationValue
-	pod, err = Client().CoreV1().Pods(e.GetK8sNamespace()).Update(pod)
+	pod, err = k8sclient.Client().CoreV1().Pods(e.GetK8sNamespace()).Update(pod)
 	if err != nil {
 		return fmt.Errorf("unable to annotate pod, cannot update pod: %s", err)
 	}

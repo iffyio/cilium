@@ -21,9 +21,9 @@ import (
 	sync "sync"
 	time "time"
 
-	versioned "github.com/cilium/cilium/pkg/k8s/client/clientset/versioned"
-	cilium_io "github.com/cilium/cilium/pkg/k8s/client/informers/externalversions/cilium.io"
-	internalinterfaces "github.com/cilium/cilium/pkg/k8s/client/informers/externalversions/internalinterfaces"
+	versioned "github.com/cilium/cilium/pkg/k8s/generated/clientset/versioned"
+	cilium_io "github.com/cilium/cilium/pkg/k8s/generated/informers/externalversions/cilium.io"
+	internalinterfaces "github.com/cilium/cilium/pkg/k8s/generated/informers/externalversions/internalinterfaces"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

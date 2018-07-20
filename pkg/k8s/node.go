@@ -15,7 +15,9 @@
 package k8s
 
 import (
+	"errors"
 	"net"
+	"time"
 
 	"github.com/cilium/cilium/pkg/annotation"
 	"github.com/cilium/cilium/pkg/logging/logfields"
@@ -23,8 +25,14 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+)
+
+var (
+	// ErrNilNode is returned when the Kubernetes API server has returned a nil node
+	ErrNilNode = errors.New("API server returned nil node")
 )
 
 // ParseNode parses a kubernetes node to a cilium node
@@ -130,4 +138,88 @@ func ParseNode(k8sNode *v1.Node) *node.Node {
 func GetNode(c kubernetes.Interface, nodeName string) (*v1.Node, error) {
 	// Try to retrieve node's cidr and addresses from k8s's configuration
 	return c.CoreV1().Nodes().Get(nodeName, metav1.GetOptions{})
+}
+
+func updateNodeAnnotation(c kubernetes.Interface, node *v1.Node, v4CIDR, v6CIDR *net.IPNet, v4HealthIP, v6HealthIP, v4CiliumHostIP net.IP) (*v1.Node, error) {
+	if node.Annotations == nil {
+		node.Annotations = map[string]string{}
+	}
+
+	if v4CIDR != nil {
+		node.Annotations[annotation.V4CIDRName] = v4CIDR.String()
+	}
+	if v6CIDR != nil {
+		node.Annotations[annotation.V6CIDRName] = v6CIDR.String()
+	}
+
+	if v4HealthIP != nil {
+		node.Annotations[annotation.V4HealthName] = v4HealthIP.String()
+	}
+	if v6HealthIP != nil {
+		node.Annotations[annotation.V6HealthName] = v6HealthIP.String()
+	}
+
+	if v4CiliumHostIP != nil {
+		node.Annotations[annotation.CiliumHostIP] = v4CiliumHostIP.String()
+	}
+
+	node, err := c.CoreV1().Nodes().Update(node)
+	if err != nil {
+		return nil, err
+	}
+
+	if node == nil {
+		return nil, ErrNilNode
+	}
+
+	return node, nil
+}
+
+// AnnotateNode writes v4 and v6 CIDRs and health IPs in the given k8s node name.
+// In case of failure while updating the node, this function while spawn a go
+// routine to retry the node update indefinitely.
+func AnnotateNode(c kubernetes.Interface, nodeName string, v4CIDR, v6CIDR *net.IPNet, v4HealthIP, v6HealthIP, v4CiliumHostIP net.IP) error {
+	scopedLog := log.WithFields(logrus.Fields{
+		logfields.NodeName:       nodeName,
+		logfields.V4Prefix:       v4CIDR,
+		logfields.V6Prefix:       v6CIDR,
+		logfields.V4HealthIP:     v4HealthIP,
+		logfields.V6HealthIP:     v6HealthIP,
+		logfields.V4CiliumHostIP: v4CiliumHostIP,
+	})
+	scopedLog.Debug("Updating node annotations with node CIDRs")
+
+	go func(c kubernetes.Interface, nodeName string, v4CIDR, v6CIDR *net.IPNet, v4HealthIP, v6HealthIP, v4CiliumHostIP net.IP) {
+		var node *v1.Node
+		var err error
+
+		for n := 1; n <= maxUpdateRetries; n++ {
+			node, err = GetNode(c, nodeName)
+			switch {
+			case err == nil:
+				_, err = updateNodeAnnotation(c, node, v4CIDR, v6CIDR, v4HealthIP, v6HealthIP, v4CiliumHostIP)
+			case k8sErrors.IsNotFound(err):
+				err = ErrNilNode
+			}
+
+			switch {
+			case err == nil:
+				return
+			case k8sErrors.IsConflict(err):
+				scopedLog.WithFields(logrus.Fields{
+					fieldRetry:    n,
+					fieldMaxRetry: maxUpdateRetries,
+				}).WithError(err).Debugf("Unable to update node resource with annotation")
+			default:
+				scopedLog.WithFields(logrus.Fields{
+					fieldRetry:    n,
+					fieldMaxRetry: maxUpdateRetries,
+				}).WithError(err).Warn("Unable to update node resource with annotation")
+			}
+
+			time.Sleep(time.Duration(n) * time.Second)
+		}
+	}(c, nodeName, v4CIDR, v6CIDR, v4HealthIP, v6HealthIP, v4CiliumHostIP)
+
+	return nil
 }

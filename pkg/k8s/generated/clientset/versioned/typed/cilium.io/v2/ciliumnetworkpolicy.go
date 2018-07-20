@@ -18,7 +18,7 @@ package v2
 
 import (
 	v2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
-	scheme "github.com/cilium/cilium/pkg/k8s/client/clientset/versioned/scheme"
+	scheme "github.com/cilium/cilium/pkg/k8s/generated/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"

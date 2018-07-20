@@ -17,7 +17,7 @@
 package fake
 
 import (
-	v2 "github.com/cilium/cilium/pkg/k8s/client/clientset/versioned/typed/cilium.io/v2"
+	v2 "github.com/cilium/cilium/pkg/k8s/generated/clientset/versioned/typed/cilium.io/v2"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
 )

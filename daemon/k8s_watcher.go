@@ -34,8 +34,9 @@ import (
 	"github.com/cilium/cilium/pkg/k8s"
 	k8sUtils "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/utils"
 	cilium_v2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
-	clientset "github.com/cilium/cilium/pkg/k8s/client/clientset/versioned"
-	informer "github.com/cilium/cilium/pkg/k8s/client/informers/externalversions"
+	k8sclient "github.com/cilium/cilium/pkg/k8s/client"
+	clientset "github.com/cilium/cilium/pkg/k8s/generated/clientset/versioned"
+	informer "github.com/cilium/cilium/pkg/k8s/generated/informers/externalversions"
 	"github.com/cilium/cilium/pkg/labels"
 	"github.com/cilium/cilium/pkg/lock"
 	"github.com/cilium/cilium/pkg/logging/logfields"
@@ -200,13 +201,13 @@ func k8sErrorHandler(e error) {
 // api server defined in the receiver's daemon k8sClient. Re-syncs all state from the
 // Kubernetes api server at the given reSyncPeriod duration.
 func (d *Daemon) EnableK8sWatcher(reSyncPeriod time.Duration) error {
-	if !k8s.IsEnabled() {
+	if !k8sclient.IsEnabled() {
 		log.Debug("Not enabling k8s event listener because k8s is not enabled")
 		return nil
 	}
 	log.Info("Enabling k8s event listener")
 
-	restConfig, err := k8s.CreateConfig()
+	restConfig, err := k8sclient.CreateConfig()
 	if err != nil {
 		return fmt.Errorf("Unable to create rest configuration: %s", err)
 	}
@@ -216,7 +217,7 @@ func (d *Daemon) EnableK8sWatcher(reSyncPeriod time.Duration) error {
 		return fmt.Errorf("Unable to create rest configuration for k8s CRD: %s", err)
 	}
 
-	k8sServerVer, err = k8s.GetServerVersion()
+	k8sServerVer, err = k8sclient.GetServerVersion()
 	if err != nil {
 		return fmt.Errorf("unable to retrieve kubernetes serverversion: %s", err)
 	}
@@ -248,7 +249,7 @@ func (d *Daemon) EnableK8sWatcher(reSyncPeriod time.Duration) error {
 	switch {
 	case networkPolicyV1VerConstr.Check(k8sServerVer):
 		_, policyController := cache.NewInformer(
-			cache.NewListWatchFromClient(k8s.Client().NetworkingV1().RESTClient(),
+			cache.NewListWatchFromClient(k8sclient.Client().NetworkingV1().RESTClient(),
 				"networkpolicies", v1.NamespaceAll, fields.Everything()),
 			&networkingv1.NetworkPolicy{},
 			reSyncPeriod,
@@ -289,7 +290,7 @@ func (d *Daemon) EnableK8sWatcher(reSyncPeriod time.Duration) error {
 	}
 
 	_, svcController := cache.NewInformer(
-		cache.NewListWatchFromClient(k8s.Client().CoreV1().RESTClient(),
+		cache.NewListWatchFromClient(k8sclient.Client().CoreV1().RESTClient(),
 			"services", v1.NamespaceAll, fields.Everything()),
 		&v1.Service{},
 		reSyncPeriod,
@@ -329,7 +330,7 @@ func (d *Daemon) EnableK8sWatcher(reSyncPeriod time.Duration) error {
 	d.k8sAPIGroups.addAPI(k8sAPIGroupServiceV1Core)
 
 	_, endpointController := cache.NewInformer(
-		cache.NewListWatchFromClient(k8s.Client().CoreV1().RESTClient(),
+		cache.NewListWatchFromClient(k8sclient.Client().CoreV1().RESTClient(),
 			"endpoints", v1.NamespaceAll, fields.Everything()),
 		&v1.Endpoints{},
 		reSyncPeriod,
@@ -370,7 +371,7 @@ func (d *Daemon) EnableK8sWatcher(reSyncPeriod time.Duration) error {
 
 	if option.Config.IsLBEnabled() {
 		_, ingressController := cache.NewInformer(
-			cache.NewListWatchFromClient(k8s.Client().ExtensionsV1beta1().RESTClient(),
+			cache.NewListWatchFromClient(k8sclient.Client().ExtensionsV1beta1().RESTClient(),
 				"ingresses", v1.NamespaceAll, fields.Everything()),
 			&v1beta1.Ingress{},
 			reSyncPeriod,
@@ -452,7 +453,7 @@ func (d *Daemon) EnableK8sWatcher(reSyncPeriod time.Duration) error {
 	si.Start(wait.NeverStop)
 
 	_, podsController := cache.NewInformer(
-		cache.NewListWatchFromClient(k8s.Client().CoreV1().RESTClient(),
+		cache.NewListWatchFromClient(k8sclient.Client().CoreV1().RESTClient(),
 			"pods", v1.NamespaceAll, fields.Everything()),
 		&v1.Pod{},
 		reSyncPeriod,
@@ -492,7 +493,7 @@ func (d *Daemon) EnableK8sWatcher(reSyncPeriod time.Duration) error {
 	d.k8sAPIGroups.addAPI(k8sAPIGroupPodV1Core)
 
 	_, nodesController := cache.NewInformer(
-		cache.NewListWatchFromClient(k8s.Client().CoreV1().RESTClient(),
+		cache.NewListWatchFromClient(k8sclient.Client().CoreV1().RESTClient(),
 			"nodes", v1.NamespaceAll, fields.Everything()),
 		&v1.Node{},
 		reSyncPeriod,
@@ -1167,7 +1168,7 @@ func (d *Daemon) addIngressV1beta1(ingress *v1beta1.Ingress) {
 		},
 	}
 
-	_, err = k8s.Client().ExtensionsV1beta1().Ingresses(dpyCopyIngress.ObjectMeta.Namespace).UpdateStatus(dpyCopyIngress)
+	_, err = k8sclient.Client().ExtensionsV1beta1().Ingresses(dpyCopyIngress.ObjectMeta.Namespace).UpdateStatus(dpyCopyIngress)
 	if err != nil {
 		scopedLog.WithError(err).WithFields(logrus.Fields{
 			logfields.K8sIngress: dpyCopyIngress,

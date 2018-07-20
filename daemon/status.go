@@ -21,7 +21,7 @@ import (
 	"github.com/cilium/cilium/api/v1/models"
 	. "github.com/cilium/cilium/api/v1/server/restapi/daemon"
 	"github.com/cilium/cilium/pkg/controller"
-	"github.com/cilium/cilium/pkg/k8s"
+	k8sclient "github.com/cilium/cilium/pkg/k8s/client"
 	"github.com/cilium/cilium/pkg/kvstore"
 	"github.com/cilium/cilium/pkg/node"
 	"github.com/cilium/cilium/pkg/option"
@@ -40,7 +40,7 @@ const (
 )
 
 func (d *Daemon) getK8sStatus() *models.K8sStatus {
-	if !k8s.IsEnabled() {
+	if !k8sclient.IsEnabled() {
 		return &models.K8sStatus{State: models.StatusStateDisabled}
 
 	}
@@ -50,7 +50,7 @@ func (d *Daemon) getK8sStatus() *models.K8sStatus {
 		status    *k8sTypes.ComponentStatus
 		err       error
 	)
-	if status, err = k8s.Client().CoreV1().ComponentStatuses().Get("controller-manager", metav1.GetOptions{}); err != nil {
+	if status, err = k8sclient.Client().CoreV1().ComponentStatuses().Get("controller-manager", metav1.GetOptions{}); err != nil {
 		return &models.K8sStatus{State: models.StatusStateFailure, Msg: err.Error()}
 	}
 	switch {
@@ -170,7 +170,7 @@ func (d *Daemon) getStatus() models.StatusResponse {
 			State: sr.ContainerRuntime.State,
 			Msg:   "Container runtime is not ready",
 		}
-	} else if k8s.IsEnabled() && sr.Kubernetes.State != models.StatusStateOk {
+	} else if k8sclient.IsEnabled() && sr.Kubernetes.State != models.StatusStateOk {
 		sr.Cilium = &models.Status{
 			State: sr.Kubernetes.State,
 			Msg:   "Kubernetes service is not ready",

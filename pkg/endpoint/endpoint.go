@@ -38,10 +38,10 @@ import (
 	"github.com/cilium/cilium/pkg/completion"
 	"github.com/cilium/cilium/pkg/controller"
 	identityPkg "github.com/cilium/cilium/pkg/identity"
-	"github.com/cilium/cilium/pkg/k8s"
 	cilium_v2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
-	clientset "github.com/cilium/cilium/pkg/k8s/client/clientset/versioned"
-	cilium_client_v2 "github.com/cilium/cilium/pkg/k8s/client/clientset/versioned/typed/cilium.io/v2"
+	k8sclient "github.com/cilium/cilium/pkg/k8s/client"
+	clientset "github.com/cilium/cilium/pkg/k8s/generated/clientset/versioned"
+	cilium_client_v2 "github.com/cilium/cilium/pkg/k8s/generated/clientset/versioned/typed/cilium.io/v2"
 	pkgLabels "github.com/cilium/cilium/pkg/labels"
 	"github.com/cilium/cilium/pkg/lock"
 	"github.com/cilium/cilium/pkg/logging/logfields"
@@ -100,7 +100,7 @@ func getCiliumClient() (ciliumClient cilium_client_v2.CiliumV2Interface, err err
 			k8sClient  *clientset.Clientset
 		)
 
-		restConfig, err = k8s.CreateConfig()
+		restConfig, err = k8sclient.CreateConfig()
 		if err != nil {
 			return
 		}
@@ -148,11 +148,11 @@ func RunK8sCiliumEndpointSyncGC() {
 	)
 
 	// this is a sanity check
-	if !k8s.IsEnabled() {
+	if !k8sclient.IsEnabled() {
 		scopedLog.WithField("name", controllerName).Warn("Not running controller because k8s is disabled")
 		return
 	}
-	sv, err := k8s.GetServerVersion()
+	sv, err := k8sclient.GetServerVersion()
 	if err != nil {
 		scopedLog.WithError(err).Error("unable to retrieve kubernetes serverversion")
 		return
@@ -170,7 +170,7 @@ func RunK8sCiliumEndpointSyncGC() {
 		scopedLog.WithError(err).Error("Not starting controller because unable to get cilium k8s client")
 		return
 	}
-	k8sClient := k8s.Client()
+	k8sClient := k8sclient.Client()
 
 	// this dummy manager is needed only to add this controller to the global list
 	controller.NewManager().UpdateController(controllerName,
@@ -501,11 +501,11 @@ func (e *Endpoint) RunK8sCiliumEndpointSync() {
 		err            error
 	)
 
-	if !k8s.IsEnabled() {
+	if !k8sclient.IsEnabled() {
 		scopedLog.Debug("Not starting controller because k8s is disabled")
 		return
 	}
-	k8sServerVer, err = k8s.GetServerVersion()
+	k8sServerVer, err = k8sclient.GetServerVersion()
 	if err != nil {
 		scopedLog.WithError(err).Error("unable to retrieve kubernetes serverversion")
 		return

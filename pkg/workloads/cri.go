@@ -26,7 +26,7 @@ import (
 	endpointid "github.com/cilium/cilium/pkg/endpoint/id"
 	"github.com/cilium/cilium/pkg/endpointmanager"
 	"github.com/cilium/cilium/pkg/ipam"
-	"github.com/cilium/cilium/pkg/k8s"
+	k8sclient "github.com/cilium/cilium/pkg/k8s/client"
 	"github.com/cilium/cilium/pkg/labels"
 	"github.com/cilium/cilium/pkg/logging/logfields"
 
@@ -268,7 +268,7 @@ func (c *criClient) handleCreateWorkload(id string, retry bool) {
 		//
 		// FIXME: Abstract via interface so other workload types can
 		// implement this
-		if k8s.IsEnabled() {
+		if k8sclient.IsEnabled() {
 			ep.SetK8sNamespace(k8sLbls.GetPodNamespace(pod.Labels))
 			ep.SetK8sPodName(k8sLbls.GetPodName(pod.Labels))
 		}

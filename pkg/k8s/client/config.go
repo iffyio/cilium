@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package k8s abstracts all Kubernetes specific behaviour
-package k8s
+package client
 
 import (
 	"os"

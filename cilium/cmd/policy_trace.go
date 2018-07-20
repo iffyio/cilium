@@ -25,8 +25,8 @@ import (
 	"github.com/cilium/cilium/pkg/command"
 	endpointid "github.com/cilium/cilium/pkg/endpoint/id"
 	"github.com/cilium/cilium/pkg/identity"
-	"github.com/cilium/cilium/pkg/k8s"
 	k8sConst "github.com/cilium/cilium/pkg/k8s/apis/cilium.io"
+	k8sclient "github.com/cilium/cilium/pkg/k8s/client"
 	"github.com/cilium/cilium/pkg/policy/trace"
 
 	"github.com/spf13/cobra"
@@ -251,11 +251,11 @@ func getSecIDFromK8s(podName string) (string, error) {
 	if err != nil {
 		Fatalf("Error while retrieving configuration: %s", err)
 	}
-	restConfig, err := k8s.CreateConfigFromAgentResponse(resp)
+	restConfig, err := k8sclient.CreateConfigFromAgentResponse(resp)
 	if err != nil {
 		return "", fmt.Errorf("unable to create rest configuration: %s", err)
 	}
-	k8sClient, err := k8s.CreateClient(restConfig)
+	k8sClient, err := k8sclient.CreateClient(restConfig)
 	if err != nil {
 		return "", fmt.Errorf("unable to create k8s client: %s", err)
 	}

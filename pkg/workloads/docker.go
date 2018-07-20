@@ -33,7 +33,7 @@ import (
 	endpointid "github.com/cilium/cilium/pkg/endpoint/id"
 	"github.com/cilium/cilium/pkg/endpointmanager"
 	"github.com/cilium/cilium/pkg/ipam"
-	"github.com/cilium/cilium/pkg/k8s"
+	k8sclient "github.com/cilium/cilium/pkg/k8s/client"
 	"github.com/cilium/cilium/pkg/labels"
 	"github.com/cilium/cilium/pkg/logging/logfields"
 	"github.com/cilium/cilium/pkg/metrics"
@@ -463,7 +463,7 @@ func (d *dockerClient) handleCreateWorkload(id string, retry bool) {
 		//
 		// FIXME: Abstract via interface so other workload types can
 		// implement this
-		if k8s.IsEnabled() {
+		if k8sclient.IsEnabled() {
 			if dockerContainer.Config != nil {
 				ep.SetK8sNamespace(k8sDockerLbls.GetPodNamespace(dockerContainer.Config.Labels))
 				ep.SetK8sPodName(k8sDockerLbls.GetPodName(dockerContainer.Config.Labels))

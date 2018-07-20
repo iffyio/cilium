@@ -20,9 +20,9 @@ import (
 	time "time"
 
 	cilium_io_v2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
-	versioned "github.com/cilium/cilium/pkg/k8s/client/clientset/versioned"
-	internalinterfaces "github.com/cilium/cilium/pkg/k8s/client/informers/externalversions/internalinterfaces"
-	v2 "github.com/cilium/cilium/pkg/k8s/client/listers/cilium.io/v2"
+	versioned "github.com/cilium/cilium/pkg/k8s/generated/clientset/versioned"
+	internalinterfaces "github.com/cilium/cilium/pkg/k8s/generated/informers/externalversions/internalinterfaces"
+	v2 "github.com/cilium/cilium/pkg/k8s/generated/listers/cilium.io/v2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
