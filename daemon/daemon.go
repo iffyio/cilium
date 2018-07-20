@@ -1132,10 +1132,6 @@ func NewDaemon() (*Daemon, error) {
 	d.StartEndpointBuilders(numWorkerThreads())
 
 	if k8sclient.IsEnabled() {
-		if err := k8s.Init(); err != nil {
-			log.WithError(err).Fatal("Unable to initialize Kubernetes subsystem")
-		}
-
 		// Kubernetes demands that the localhost can always reach local
 		// pods. Therefore unless the AllowLocalhost policy is set to a
 		// specific mode, always allow localhost to reach local

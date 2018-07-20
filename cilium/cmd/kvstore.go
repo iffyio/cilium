@@ -15,6 +15,8 @@
 package cmd
 
 import (
+	"github.com/cilium/cilium/pkg/k8s"
+	k8sclient "github.com/cilium/cilium/pkg/k8s/client"
 	"github.com/cilium/cilium/pkg/kvstore"
 	"github.com/cilium/cilium/pkg/option"
 
@@ -54,6 +56,15 @@ func setupKvstore() {
 				kvStoreOpts[k] = v
 			}
 		}
+
+		k8sclient.Configure("", "/var/lib/cilium/cilium.kubeconfig")
+		if k8sclient.IsEnabled() {
+			if err := k8s.Init(); err != nil {
+				log.WithError(err).Fatal("Unable to initialize Kubernetes subsystem")
+			}
+			log.Debugf("k8s setup done")
+		}
+
 	}
 
 	if err := kvstore.Setup(kvStore, kvStoreOpts); err != nil {

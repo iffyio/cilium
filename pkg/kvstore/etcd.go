@@ -41,8 +41,15 @@ import (
 const (
 	etcdName = "etcd"
 
-	addrOption = "etcd.address"
-	cfgOption  = "etcd.config"
+	addrOption          = "etcd.address"
+	cfgOption           = "etcd.config"
+	k8sSecretNameOption = "etcd.k8s.secret"
+
+	k8sSecretNamespace   = "kube-system"
+	k8sClientName        = "cilium-etcd-client"
+	k8sSecretName        = k8sClientName + "-tls"
+	k8sClientDefaultPort = "2379"
+	k8sClientDefaultAddr = "https://" + k8sClientName + ":" + k8sClientDefaultPort
 )
 
 type etcdModule struct {
@@ -77,6 +84,8 @@ var (
 	// etcdDummyAddress can be overwritten from test invokers using ldflags
 	etcdDummyAddress = "http://127.0.0.1:4002"
 
+	k8sSecretNameDefault = fmt.Sprintf("%s/%s", k8sSecretNamespace, k8sSecretName)
+
 	etcdInstance = &etcdModule{
 		opts: backendOptions{
 			addrOption: &backendOption{
@@ -84,6 +93,10 @@ var (
 			},
 			cfgOption: &backendOption{
 				description: "Path to etcd configuration file",
+			},
+			k8sSecretNameOption: &backendOption{
+				description: "Namespace/Name of the Kubernetes secret that contains the " +
+					"TLS certificate to connect to etcd-operator.",
 			},
 		},
 	}
@@ -111,24 +124,55 @@ func (e *etcdModule) getConfig() map[string]string {
 	return getOpts(e.opts)
 }
 
+func getNamespaceName(s string) (string, string, error) {
+	namespaceName := strings.Split(s, "/")
+	if len(namespaceName) != 2 {
+		return "", "", fmt.Errorf("invalid namespace name %q valid format is <namespace>/<name>", s)
+	}
+	return namespaceName[0], namespaceName[1], nil
+}
+
 func (e *etcdModule) newClient() (BackendOperations, error) {
 	endpointsOpt, endpointsSet := e.opts[addrOption]
 	configPathOpt, configSet := e.opts[cfgOption]
+	k8sSecretSetOpt, k8sSecretSet := e.opts[k8sSecretNameOption]
 	configPath := ""
 
 	if e.config == nil {
-		if !endpointsSet && !configSet {
-			return nil, fmt.Errorf("invalid etcd configuration, %s or %s must be specified", cfgOption, addrOption)
+		if !endpointsSet && !configSet && !k8sSecretSet {
+			return nil, fmt.Errorf("invalid etcd configuration, %s and %s or %s must be specified", cfgOption, addrOption, k8sSecretNameOption)
 		}
 
 		e.config = &client.Config{}
 
-		if endpointsSet {
+		if endpointsSet && endpointsOpt.value != "" {
 			e.config.Endpoints = []string{endpointsOpt.value}
 		}
 
 		if configSet {
 			configPath = configPathOpt.value
+		}
+
+		// If k8sSecret is set then we will retrieve the secrets from kubernetes
+		// and create the necessary TLS configuration to allow client to
+		// server communication.
+		if k8sSecretSet && k8sSecretSetOpt.value != "" {
+			if len(e.config.Endpoints) == 0 {
+				if k8sSecretSetOpt.value != k8sSecretNameDefault {
+					return nil, fmt.Errorf("secret name different than default value %q requires"+
+						"option %q to be set with service name to connect to etcd-operator", k8sSecretNameDefault, addrOption)
+				}
+				e.config.Endpoints = []string{k8sClientDefaultAddr}
+			}
+			ns, name, err := getNamespaceName(k8sSecretSetOpt.value)
+			if err != nil {
+				return nil, err
+			}
+			tlsConfig, err := getEtcdOperatorSecrets(ns, name)
+			if err != nil {
+				return nil, err
+			}
+			e.config.TLS = tlsConfig
 		}
 	}
 

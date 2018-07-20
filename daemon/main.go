@@ -38,6 +38,7 @@ import (
 	"github.com/cilium/cilium/pkg/envoy"
 	"github.com/cilium/cilium/pkg/flowdebug"
 	"github.com/cilium/cilium/pkg/identity"
+	"github.com/cilium/cilium/pkg/k8s"
 	k8sclient "github.com/cilium/cilium/pkg/k8s/client"
 	"github.com/cilium/cilium/pkg/kvstore"
 	"github.com/cilium/cilium/pkg/labels"
@@ -682,6 +683,15 @@ func initEnv(cmd *cobra.Command) {
 		log.Fatal("Invalid fixed identities provided: %s", err)
 	}
 
+	// As kvstore might require a connection to kubernetes, we need to
+	// setup and init k8s package before setting up kvstore package.
+	k8sclient.Configure(k8sAPIServer, k8sKubeConfigPath)
+	if k8sclient.IsEnabled() {
+		if err := k8s.Init(); err != nil {
+			log.WithError(err).Fatal("Unable to initialize Kubernetes subsystem")
+		}
+	}
+
 	if err := kvstore.Setup(kvStore, kvStoreOpts); err != nil {
 		addrkey := fmt.Sprintf("%s.address", kvStore)
 		addr := kvStoreOpts[addrkey]
@@ -727,8 +737,6 @@ func initEnv(cmd *cobra.Command) {
 			node.SetExternalIPv4(ip)
 		}
 	}
-
-	k8sclient.Configure(k8sAPIServer, k8sKubeConfigPath)
 
 	// workaround for to use the values of the deprecated dockerEndpoint
 	// variable if it is set with a different value than defaults.

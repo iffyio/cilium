@@ -147,9 +147,19 @@
     "etcdserver/etcdserverpb",
     "mvcc/mvccpb",
     "pkg/tlsutil",
+    "pkg/transport",
     "pkg/types"
   ]
   revision = "v3.2.20"
+
+[[projects]]
+  name = "github.com/coreos/etcd-operator"
+  packages = [
+    "pkg/util/constants",
+    "pkg/util/etcdutil"
+  ]
+  revision = "3bcbdb19d9a82a48d49f280ba7facb87060d8303"
+  version = "v0.7.0"
 
 [[projects]]
   name = "github.com/coreos/go-iptables"
@@ -1221,6 +1231,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "787623a4e3f906505165763a3c5382f340edc43fe2038c8a7691a80b32e32cf6"
+  inputs-digest = "255dbc524e53e57208f1649576c9464aede5030baa7b1853d0b2fc6217940acd"
   solver-name = "gps-cdcl"
   solver-version = 1
