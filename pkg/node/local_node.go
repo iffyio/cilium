@@ -48,7 +48,7 @@ func ConfigureLocalNode() error {
 		IPv6HealthIP:  GetIPv6HealthIP(),
 	}
 
-	UpdateNode(&localNode, TunnelRoute, nil)
+	UpdateNode(&localNode, TunnelRoute, nil, FromAgentLocal)
 
 	nodeRegistered := make(chan struct{})
 	go func() {
